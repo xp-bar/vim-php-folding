@@ -56,13 +56,14 @@
     " --- GetFunctionDeclaration --- {{{
     function! GetFunctionDeclaration(lines)
         for line in a:lines
-            if match(line, '.*function .*') >= 0
+            if match(line, '\(public\|private\|protected\).*function .*') >= 0
                 let result = substitute(line, 'function', '', '')
                 if g:php_fold_uppercase_access_types == 1
                     let result = substitute(result, '\s\{4\}\(public\|private\|protected\)', '\U\1', '')
                 endif
                 let result = substitute(result, '\s\{2,\}', ' ', '')
                 let result = substitute(result, '\s\{2,\}', ' ', '')
+                let result = substitute(result, '{', '', '')
     
                 if match(result, '.*\s*\:\s[a-z]*') < 0
                     let result = result . GetReturnComment(a:lines)
@@ -119,14 +120,65 @@
         let l:max_length = 60
         let l:result = ""
         let lines = getbufline(bufnr('%'), a:start, a:end)
+        let count = a:end-a:start+1
         if len(lines) < 1
-            return "{ ... }"
+            return spaces . "// " . count . " lines hidden"
         endif
     
         let result = GetFunctionDeclaration(lines)
         let result = result . "    " . GetFunctionComments(lines)
+
+        if match(result, '^\s*$') >= 0
+            if g:php_fold_show_fold_preview == 1
+                let line = lines[0]
+                let length = 120
+                if len(line) > length
+                    let line = line[0:length-4]
+                endif
+
+                let line = substitute(line, '\s\{2,\}', ' ', '')
+
+                return line . " ..."
+            endif
+
+            return "--- " . count . " lines hidden --- "
+        endif
     
         return result
+    endfunction
+    " --- }}}
+    
+    " --- NextNonBlankLine --- {{{
+    function! NextNonBlankLine(lnum)
+        let numlines = line('$')
+        let current = a:lnum + 1
+    
+        while current <= numlines
+            if getline(current) =~? '\v\S'
+                return current
+            endif
+    
+            let current += 1
+        endwhile
+    
+        return -2
+    endfunction
+    " --- }}}
+    "
+    " --- PrevNonBlankLine --- {{{
+    function! PrevNonBlankLine(lnum)
+        let numlines = line('$')
+        let current = a:lnum - 1
+    
+        while current >= 0
+            if getline(current) =~? '\v\S'
+                return current
+            endif
+    
+            let current -= 1
+        endwhile
+    
+        return -2
     endfunction
     " --- }}}
 " === }}}
@@ -143,27 +195,36 @@ function! FoldText()
         let i = i+1
     endwhile
 
+    let text = GetCommentText(v:foldstart, v:foldend)
 
-    return spaces . GetCommentText(v:foldstart, v:foldend)
+    return spaces . text
 endfunction
 "  === }}}
 
 " === GetPHPFold === {{{
 function! GetPHPFold(lnum)
     let this_indent = IndentLevel(a:lnum)
+    let next_indent = IndentLevel(NextNonBlankLine(a:lnum))
+    let prev_indent = IndentLevel(PrevNonBlankLine(a:lnum))
 
-    if match(getline(a:lnum), '^[ ]\{4\}\/\*\*') >= 0
+    if getline(a:lnum) =~? '\v^\s*$'
+        return '-1'
+    endif
+
+    if match(getline(a:lnum), '^}$') >= 0
+        return 0
+    endif
+
+    if this_indent == 0
+        return '-1'
+    endif
+
+    if match(getline(a:lnum), '^[ ]\{4,\}\/\*\*') >= 0
         " Comment starts fold, return >indent
         return '>' . this_indent
     endif
 
-    if match(getline(a:lnum), '^[ ]\{4\}}') >= 0
-        " closing parenthesis closes fold, return <indent
-        return '<' . this_indent
-    endif
-
-    " on the same level as the surrounding folds
-    return '-1'
+    return this_indent
 endfunction
 " === }}}
 

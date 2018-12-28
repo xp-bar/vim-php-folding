@@ -21,6 +21,25 @@ class Test
      */
     public function blue()
     {
+        $test->func()
+            ->function()
+            ->test()
+            ->indent();
+
+        $func = function () {
+            $multiple = "lines";
+
+            return "Test";
+        };
+
+        $array = [
+            "test",
+            "test",
+            "test",
+            "test",
+            "test"
+        ];
+
         return "hi";
     }
 
@@ -31,6 +50,10 @@ class Test
      */
     protected function blue(): string
     {
+        $this->function();
+        $this->function();
+        $this->function();
+
         return "hi";
     }
 }
