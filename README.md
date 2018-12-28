@@ -7,7 +7,7 @@ For me, for example, that's under `~/.vim/ftplugin/php/folding.vim`, or for nvim
 
 
 #### Options
-you can also add the following options to your `.vimrc` to configure the way your fold behave:
+you can also add the following options to your `.vimrc` to configure the way your folds behave:
 ```
 " 1 = true, 0 = false
 
