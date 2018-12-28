@@ -69,6 +69,7 @@
                     let result = result . GetReturnComment(a:lines)
                 endif
     
+                let result = substitute(result, '^\s\(.*\)', '\1', '')
                 return result
             endif
         endfor
@@ -125,8 +126,16 @@
             return spaces . "// " . count . " lines hidden"
         endif
     
-        let result = GetFunctionDeclaration(lines)
-        let result = result . "    " . GetFunctionComments(lines)
+        let funcdecl = GetFunctionDeclaration(lines)
+        let funccomm = GetFunctionComments(lines)
+
+        if match(funcdecl, '^\s*$') < 0
+            let funcdecl = funcdecl . "    "
+        else
+            let funcdecl = "--- " . count . " lines hidden --- "
+        endif
+
+        let result = result . funcdecl . funccomm
 
         if match(result, '^\s*$') >= 0
             if g:php_fold_show_fold_preview == 1
@@ -187,10 +196,10 @@
 function! FoldText()
     let count = v:foldend-v:foldstart
 
-    let ind = indent(v:foldstart)
+    let ind = IndentLevel(v:foldstart)
     let i = 0
-    let spaces = ' '
-    while i < (ind - ind/4)
+    let spaces = ''
+    while i < ind*4
         let spaces .= ' '
         let i = i+1
     endwhile
